@@ -1,0 +1,107 @@
+# -*- coding: utf-8 -*-
+
+# CGNS - Coarse-Grained Nucleus Simulator
+#
+# See the README file in the top-level CGNS directory.
+# This software is released under the GNU General Public License.
+
+# -----------------------------------------------------------------------------
+# This file (init.lmp) is the LAMMPS input file for simulation.
+# -----------------------------------------------------------------------------
+
+# date             :07-Jul-22
+# version          :0.7.0
+# usage            :lmp_mylammps < init.lmp
+# LAMMPS_version   :patch_7Jan2022
+
+# Variables -------------------------------------------------------------------
+variable seed equal 221 # seed for pseudo-random number generation
+variable scl equal 2.5 # scale of NE patch w.r.t. 1 micron by 1 micron
+
+# Domain and initial configuration --------------------------------------------
+units lj # reduced units
+dimension 3 # 3D
+boundary p p p # particles that cross simulation domain are deleted
+# LAMMPS package ASPHERE required for atom_style ellipsoid
+atom_style hybrid ellipsoid full
+
+# Domain decomposition for 4 processors, modify as needed
+processors 2 2 1
+
+# Read initial configuration
+read_data ../data/ne.data
+
+# Particle information --------------------------------------------------------
+
+# Masses
+mass 1 1.237
+
+# Shape of ellipsoidal particles
+set type 1 shape 3  3  3 # spherical diameter of 30 nm
+# set	type 1 quat/random 29898
+
+# Interaction Potentials ------------------------------------------------------
+
+# Pairwise interaction
+# The fluidmembrane package is required for pair_style fluidmembrane
+# Please cite the fluidmembrane package separately, as it is not included in
+# this package. See ../README for details.
+pair_style fluidmembrane 7.5
+pair_coeff	1	1	1.0	2.121320	5.20	4	7.5	0.0
+
+# Minimize --------------------------------------------------------------------
+minimize 0.0001 0.0001 1000 1000
+
+# Groups and computes ---------------------------------------------------------
+group monolayer type 1
+
+compute monolayertemp monolayer temp/asphere
+
+# Timestep --------------------------------------------------------------------
+reset_timestep 0
+timestep 0.001
+
+# Output settings -------------------------------------------------------------
+
+dump 1 all atom 1000 ../data/init.lammpstrj
+
+thermo_modify warn ignore
+thermo 1000
+compute er monolayer erotate/asphere
+compute et monolayer ke
+thermo_style custom step c_monolayertemp epair ebond eangle etotal c_er c_et
+
+# Thermal equilibration -------------------------------------------------------
+
+# Hold monolayer COM
+fix 0a monolayer recenter INIT INIT INIT
+
+# Initialize velocities with target temperature
+velocity monolayer create 0.23 ${seed} dist gaussian loop geom
+
+# Thermostats
+fix monolayerdyn0 monolayer nvt/asphere temp 0.23 0.23 3.0
+fix_modify monolayerdyn0 temp monolayertemp
+run 2000
+
+# Implicit solvation (1/100x damping)
+unfix monolayerdyn0
+
+fix monolayerdyn1 monolayer nve/asphere
+fix monolayerdyn2 monolayer langevin 0.23 0.23 3.3813 ${seed} angmom 0.033333
+fix_modify monolayerdyn2 temp monolayertemp
+run 2000
+
+# done 4k
+
+# Equilibration ---------------------------------------------------------------
+
+# 1/10x damping
+fix monolayerdyn2 monolayer langevin 0.23 0.23 0.33813 ${seed} angmom 0.033333
+fix_modify monolayerdyn2 temp monolayertemp
+run 26000
+
+# done 30k
+
+# Exit ------------------------------------------------------------------------
+#quit

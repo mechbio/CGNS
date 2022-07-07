@@ -7,19 +7,19 @@
 # This software is released under the GNU General Public License.
 
 # -----------------------------------------------------------------------------
-# This file (run.sh) is used to run and monitor simulations.
+# This file (ne.sh) is for generating init.data.
 # -----------------------------------------------------------------------------
 
 # date         :06-Jul-22
 # version      :0.7.0
-# usage        :./run.sh
+# usage        :./init.sh
 # sh_version   :5.0.17(1)-release
 
-# Ensure output file exists
-touch ../data/init.out
-# Parallel run
-mpirun -np 4 lmp_mylammps < init2.lmp > ../data/init.out
-# Status
-# watch -n 1 "tail -10 ../data/init.out"
+# Run init.py
+python3 ne.py 1.5
+
+# copy to data
+mkdir -p ../../data/
+mv ne.data ../../data/
 
 exit 0
