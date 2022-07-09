@@ -1,10 +1,15 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 
-# CGNS - Coarse-Grained Nucleus Simulator
+# This file is part of CGNS - Coarse-Grained Nucleus Simulator.
+#
+# Copyright 2022 Pranjal Singh
+#
+# When contributing, please append a new line (e.g. # Copyright [Year] [Name])
+# to the above copyright notice.
 #
 # See the README file in the top-level CGNS directory.
-# This software is released under the GNU General Public License.
+# This software is distributed under the GNU General Public License.
 
 # -----------------------------------------------------------------------------
 # This file (run.sh) is used to run and monitor simulations.

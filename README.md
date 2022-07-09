@@ -3,7 +3,7 @@
 CGNS is being developed for simulating a coarse-grained model of the mammalian
 nucleus. So far, the planar membrane in CGNPS is converted to spherical shape
 (see below). Next, the filament generation will be converted from normal
-orientation to radial orientation. Similarly, the deposition walls will be made 
+orientation to radial orientation. Similarly, the deposition walls will be made
 spherical, growing like a temporary bubble to deposit the filaments to form the
 nuclear lamina.
 
@@ -26,9 +26,6 @@ Website: https://doi.org/10.17632/4v53nkv5hc.1
 Harris, C.R., Millman, K.J., van der Walt, S.J. et al. Array programming with
 NumPy. Nature 585, 357–362 (2020). https://doi.org/10.1038/s41586-020-2649-2 \
 Website: https://numpy.org
-
-4. Pizza.py Toolkit \
-Website: https://lammps.github.io/pizza/
 
 ### Setup
 1. Please refer to the website for installation instructions of the above 4
