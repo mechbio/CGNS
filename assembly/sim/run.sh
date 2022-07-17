@@ -15,15 +15,15 @@
 # This file (run.sh) is used to run and monitor simulations.
 # -----------------------------------------------------------------------------
 
-# date         :06-Jul-22
-# version      :0.7.0
+# date         :11-Jul-22
+# version      :0.9.0
 # usage        :./run.sh
 # sh_version   :5.0.17(1)-release
 
 # Ensure output file exists
 touch ../data/init.out
 # Parallel run
-mpirun -np 4 lmp_mylammps < init2.lmp > ../data/init.out
+mpirun -np 4 lmp_mylammps < init3.lmp > ../data/init.out
 # Status
 # watch -n 1 "tail -10 ../data/init.out"
 

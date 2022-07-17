@@ -21,7 +21,7 @@
 # sh_version   :5.0.17(1)-release
 
 # Run init.py
-python3 ne.py 1.5
+python3 ne.py 2
 
 # copy to data
 mkdir -p ../../data/

@@ -1,0 +1,247 @@
+# -*- coding: utf-8 -*-
+
+# This file is part of CGNS - Coarse-Grained Nucleus Simulator.
+#
+# Copyright 2022 Pranjal Singh
+#
+# When contributing, please append a new line (e.g. # Copyright [Year] [Name])
+# to the above copyright notice.
+#
+# See the README file in the top-level CGNS directory.
+# This software is distributed under the GNU General Public License.
+
+# -----------------------------------------------------------------------------
+# This file (init.lmp) is the LAMMPS input file for simulating with NE.
+# -----------------------------------------------------------------------------
+
+# date             :17-Jul-22
+# version          :0.9.0
+# usage            :lmp_mylammps < init.lmp
+# LAMMPS_version   :patch_7Jan2022
+
+# Variables -------------------------------------------------------------------
+variable seed equal 221 # seed for pseudo-random number generation
+variable scl equal 2
+variable R equal 50*${scl} # radius of monolayer
+
+# Domain and initial configuration --------------------------------------------
+units lj # reduced units
+dimension 3 # 3D
+boundary p p p
+# LAMMPS package ASPHERE required for atom_style ellipsoid
+atom_style hybrid ellipsoid full
+
+# Domain decomposition for 4 processors, modify as needed
+processors 2 2 1
+
+# Read initial configuration
+read_data ../data/ne.data extra/bond/per/atom 10 extra/special/per/atom 100
+
+# Particle information --------------------------------------------------------
+
+# Masses
+mass 1 1.237
+mass 2 60.00
+mass 3 0.070
+mass 4 0.068
+
+# Shape of ellipsoidal particles
+set type 1*2 shape 2  2  2 # spherical diameter of 20 nm
+set type 3*4 shape 0  0  0 # not ellipsoid
+# set	type 1 quat/random 29898
+
+# Interaction Potentials ------------------------------------------------------
+
+# Pairwise interaction
+# The fluidmembrane package is required for pair_style fluidmembrane
+# Please cite the fluidmembrane package separately, as it is not included in
+# this package. See ../README for details.
+pair_style hybrid fluidmembrane 7.5 mie/cut 1.0
+pair_coeff	1	1	fluidmembrane	1.0	2.121320	5.20	4	7.5	0.0
+pair_coeff	1	2	fluidmembrane	2.0	4.949747	10.10	4	7.5	0.0
+pair_coeff	2	2	mie/cut	0.010000	10.606602	4	2	15.00
+pair_coeff	3	3	mie/cut	0.020000	1.048297	9	6	1.92
+pair_coeff	4	4	mie/cut	0.020000	1.048297	9	6	1.92
+pair_coeff	3	4	mie/cut	0.020000	1.048297	9	6	1.92
+pair_coeff	2	3	mie/cut	0.010000	2.620741	9	6	4.20
+pair_coeff	2	4	mie/cut	0.010000	2.620741	9	6	4.20
+pair_coeff	1	3	mie/cut	0.010000	2.620741	9	6	4.20
+pair_coeff	1	4	mie/cut	0.020000	2.620741	9	6	4.20
+
+# Bonded interaction
+# LAMMPS package MOLECULE required for fene and cosine/delta
+special_bonds lj 0.0 1.0 1.0
+bond_style hybrid harmonic morse fene
+bond_coeff	1	harmonic	75.000	2.000	# NL filament
+bond_coeff	2	morse	0.200	3.162	1.200	# CL
+bond_coeff	3	morse	0.200	1.225	3.000	# IL
+angle_style cosine/delta
+angle_coeff	1	6.325	180.000	# NL filament
+
+# Groups and computes ---------------------------------------------------------
+group NM type 1
+group NPC type 2
+group NLA type 3
+group NLB type 4
+group monolayer type 1 2
+group meshwork type 3 4
+group NE type 1 2 3 4
+
+compute monolayertemp monolayer temp/asphere
+compute meshworktemp meshwork temp
+
+# Minimize --------------------------------------------------------------------
+# Initialize velocities with target temperature
+velocity monolayer create 0.23 ${seed} dist gaussian loop geom
+velocity meshwork create 0.23 ${seed} dist gaussian loop geom
+minimize 0.00001 0.00001 1000 1000
+
+# Timestep --------------------------------------------------------------------
+reset_timestep 0
+timestep 0.001
+
+# Output settings -------------------------------------------------------------
+
+dump 1 all atom 1000 ../data/init.lammpstrj
+compute 1 all property/local btype batom1 batom2
+dump 2 all local 1000 ../data/init.dump_local index c_1[1] c_1[2] c_1[3]
+
+thermo_modify warn ignore
+thermo 1000
+compute er monolayer erotate/asphere
+compute et monolayer ke
+thermo_style custom step c_monolayertemp c_meshworktemp &
+epair ebond eangle etotal c_er c_et
+
+# Thermal equilibration -------------------------------------------------------
+
+# 10x weaker NPC-NPC interaction
+pair_coeff	2	2	mie/cut	0.001000	10.606602	4	2	15.00
+
+# Hold monolayer COM
+fix 0a monolayer recenter INIT INIT INIT
+
+# Initialize velocities with target temperature
+velocity monolayer create 0.23 ${seed} dist gaussian loop geom
+velocity meshwork create 0.23 ${seed} dist gaussian loop geom
+
+# Thermostats
+fix monolayerdyn0 monolayer nvt/asphere temp 0.23 0.23 3.0
+fix_modify monolayerdyn0 temp monolayertemp
+fix meshworkdyn0 meshwork  nvt temp 0.23 0.23 3.0
+
+# Gradually push fused NPCs on monolayer, if any
+pair_coeff	2	2	mie/cut	0.002000	10.606602	4	2	15.00
+run 1500
+pair_coeff	2	2	mie/cut	0.004000	10.606602	4	2	15.00
+run 1500
+pair_coeff	2	2	mie/cut	0.008000	10.606602	4	2	15.00
+run 1500
+pair_coeff	2	2	mie/cut	0.010000	10.606602	4	2	15.00
+run 1500
+
+# Implicit solvation (1/10000x damping)
+unfix monolayerdyn0
+unfix meshworkdyn0
+
+fix monolayerdyn1 monolayer nve/asphere
+fix meshworkdyn1 meshwork nve
+
+fix monolayerdyn2 monolayer langevin 0.23 0.23 338.13 ${seed} angmom 0.033333
+fix_modify monolayerdyn2 temp monolayertemp
+fix meshworkdyn2 meshwork langevin 0.23 0.23 4.71 ${seed}
+
+run 5000
+
+# Reduce forces on particles to less than 400pN
+minimize 0.0 200 1000 1000
+
+# Repulsion of NL from below by implicit PC -----------------------------------
+variable rdepoB equal ramp(1.0,${R}-8.0)
+variable rdepoA equal ramp(1.0,${R}-12.0)
+variable rB equal ${R}-8.0
+variable rA equal ${R}-12.0
+
+# Deposit NL with preference to NLB
+fix depoB NLB indent 0.001 sphere 0 0 0 v_rdepoB side out units box
+run 15000
+fix depoB NLB indent 0.001 sphere 0 0 0 ${rB} side out units box
+
+fix depoA NLA indent 0.001 sphere 0 0 0 v_rdepoA side out units box
+run 15000
+fix depoA NLA indent 0.001 sphere 0 0 0 ${rA} side out units box
+
+# Reduce forces on particles to less than 200pN
+minimize 0.0 100 1000 1000
+
+# Holding some of the NL shall be taken over by implicit PC
+variable rPC equal ${R}-15.0
+fix supportNL meshwork indent 0.001 sphere 0 0 0 ${rPC} side out units box
+
+# Reduce forces on particles to less than 100pN (50*1.8 is less than 100)
+minimize 0.0 50 1000 1000
+
+# Assemble NL  ----------------------------------------------------------------
+
+# 1/1000x damping
+fix monolayerdyn2 monolayer langevin 0.23 0.23 33.813 ${seed} angmom 0.033333
+fix_modify monolayerdyn2 temp monolayertemp
+fix meshworkdyn2 meshwork langevin 0.23 0.23 0.471 ${seed}
+run 1000
+
+# Reversible bonding
+fix	CLbrk all	bond/break	200	2	1.800
+fix	ILbrk all	bond/break	200	3	4.500
+
+fix	3CL3 all	bond/create	1000	3 3	1.320	2	iparam 2 3	jparam 2 3
+fix	4CL4 all	bond/create	1000	4 4	1.320	2	iparam 2 4	jparam 2 4
+fix	3IL1 all	bond/create	1000	1 3	3.300	3	iparam 1 1	jparam 1 3
+fix	3IL2 all	bond/create	1000	2 3	3.300	3	iparam 5 2	jparam 1 3
+fix	4IL1 all	bond/create	1000	1 4	3.300	3	iparam 1 1	jparam 1 4
+fix	4IL2 all	bond/create	1000	2 4	3.300	3	iparam 2 2	jparam 1 4
+
+run 2000
+
+# 1/100x damping
+fix monolayerdyn2 monolayer langevin 0.23 0.23 3.3813 ${seed} angmom 0.033333
+fix_modify monolayerdyn2 temp monolayertemp
+fix meshworkdyn2 meshwork langevin 0.23 0.23 0.0471 ${seed}
+run 7000
+
+# Equilibration ---------------------------------------------------------------
+
+# 1/10x damping
+fix monolayerdyn2 monolayer langevin 0.23 0.23 0.33813 ${seed} angmom 0.033333
+fix_modify monolayerdyn2 temp monolayertemp
+fix meshworkdyn2 meshwork langevin 0.23 0.23 0.00471 ${seed}
+run 20000
+
+# Write data and restart files ------------------------------------------------
+
+write_data ../data/init.data nocoeff
+write_restart ../data/init.restart
+
+# Verify equilibration --------------------------------------------------------
+
+variable eP equal epair
+variable eB equal ebond
+variable eA equal eangle
+variable eT equal etotal
+
+variable Lx equal 100*${scl}
+variable Ly equal 100*${scl}
+variable A equal ${Lx}*${Ly}
+
+compute monolayerperatom monolayer stress/atom NULL
+compute monolayerp monolayer reduce sum &
+c_monolayerperatom[1] c_monolayerperatom[2]
+variable monolayertension equal (c_monolayerp[1]+c_monolayerp[2])/(2*v_A)
+
+fix equil all ave/time 1 1 1000 c_monolayertemp c_meshworktemp &
+v_eP v_eB v_eA v_eT v_monolayertension &
+file ../data/equil.txt
+
+run 10000
+
+# Exit ------------------------------------------------------------------------
+#quit

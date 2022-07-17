@@ -11,7 +11,7 @@
 # This software is distributed under the GNU General Public License.
 
 # -----------------------------------------------------------------------------
-# This file (init.lmp) is the LAMMPS input file for simulation.
+# This file (init.lmp) is the LAMMPS input file for simulating with just NM.
 # -----------------------------------------------------------------------------
 
 # date             :07-Jul-22

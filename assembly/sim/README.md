@@ -1,12 +1,14 @@
 # sim: simulation sub-module
 
-Date:               08-Jul-22
-Version:            0.7.0
+Date:               17-Jul-22
+Version:            0.9.0
 
 ### Description of files in this directory
 README.md           this file
 run.sh              run and monitor simulation
-init.lmp            LAMMPS input file
+init.lmp            Original LAMMPS input file from CGNPS
+init2.lmp           LAMMPS input file with just NM
+init3.lmp           LAMMPS input file with just NE
 log.lammps          LAMMPS log file (created at runtime)
 
 

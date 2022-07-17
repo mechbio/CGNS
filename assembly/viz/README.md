@@ -1,18 +1,19 @@
 # viz: visualization sub-module
 
-Date:               08-Jul-22
-Version:            0.7.0
+Date:               17-Jul-22
+Version:            0.9.0
 
 ### Description of files in this directory
 README.md             this file
-viz.ovito             visualization of ne.data and init.lammpstrj in ../data/
-viz.sh                processing structure file for visualization (viz)
-composition.ovito     viz of CGNP (Fig. 1a) and its composition (Fig. 1b)
-slice-diagonal.ovito  viz of a slice of CGNP along the xy-diagonal (Fig. 1c)
-surface.ovito         viz of nuclear surface deformation (Fig. 2a)
+viz.sh                processing structure file for visualization
+viz3.ovito            visualize NE vesicle made via ../sim/init3.lmp
+viz2.ovito            visualize NM vesicle made via ../sim/init2.lmp
+composition.ovito     from CGNPS; kept for later use
+slice-diagonal.ovito  from CGNPS; kept for later use
+surface.ovito         from CGNPS; kept for later use
 
 ### Usage
-0. Only the viz.ovito file is operational currently. Please use only this file.
+0. Either of viz2 and viz3 OVITO files can be used.
 1. On first time run, the OVITO file may require manual reloading of
    ne.data and init.lammpstrj from ../data/ into the 'Data source' and the
    'Load trajectory' in the 'Modifications' pipeline respectively.

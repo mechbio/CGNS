@@ -1,13 +1,9 @@
 # CGNS: Coarse-Grained Nucleus Simulator
 
 CGNS is being developed for simulating a coarse-grained model of the mammalian
-nucleus. So far, the planar membrane in CGNPS is converted to spherical shape
-(see below). Next, the filament generation will be converted from normal
-orientation to radial orientation. Similarly, the deposition walls will be made
-spherical, growing like a temporary bubble to deposit the filaments to form the
-nuclear lamina.
+nucleus. So far, the planar NE in CGNPS is converted to spherical shape, resulting in a NE vesicle (see below).
 
-![CGNS visual](viz.gif)
+![CGNS visual](vizNE.gif)
 
 ### Dependencies
 1. LAMMPS \
